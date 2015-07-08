@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="TabsIndicator">
+        <attr name="textColor" format="color|reference"/>
+        <attr name="textSizeNormal" format="dimension|reference"/>
+        <attr name="textSizeSelected" format="dimension|reference"/>
+        <attr name="lineMarginTab" format="dimension|reference"/>
+        <attr name="lineColor" format="color|reference"/>
+        <attr name="lineHeight" format="dimension|reference"/>
+        <attr name="hasDivider" format="boolean"/>
+        <attr name="dividerColor" format="color|reference"/>
+        <attr name="dividerWidth" format="dimension|reference"/>
+        <attr name="dividerVerticalMargin" format="dimension|reference"/>
+        <attr name="dividerPosition">
+            <enum name="top" value="0"/>
+            <enum name="bottom" value="1"/>
+        </attr>
+    </declare-styleable>
+</resources>
