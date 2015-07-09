@@ -6,6 +6,8 @@ import android.content.res.TypedArray;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.StateListDrawable;
 import android.support.v4.view.ViewPager;
 import android.support.v4.view.ViewPager.OnPageChangeListener;
 import android.util.AttributeSet;
@@ -15,6 +17,9 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Tabs indicator
@@ -38,7 +43,7 @@ public class TabsIndicator extends LinearLayout implements View.OnClickListener,
     private int mDividerColor = android.R.color.black;
     private int mDividerWidth = 3;
     private int mDividerVerticalMargin = 10;
-    private int mDividerPosition = 1;
+    private int mLinePosition = 1;
 
     private boolean mIsAnimation = true;
 
@@ -57,6 +62,8 @@ public class TabsIndicator extends LinearLayout implements View.OnClickListener,
     private Context mContext;
 
     private OnPageChangeListener mOnPageChangeListener;
+
+    private List<StateListDrawable> mTabIcons;
 
     public TabsIndicator(Context context) {
         this(context, null);
@@ -78,6 +85,7 @@ public class TabsIndicator extends LinearLayout implements View.OnClickListener,
         mLineColor = ta.getColor(R.styleable.TabsIndicator_lineColor, mLineColor);
         mLineMarginTab = ta.getDimensionPixelOffset(R.styleable.TabsIndicator_lineMarginTab, mLineMarginTab);
         mLineHeight = ta.getDimensionPixelOffset(R.styleable.TabsIndicator_lineHeight, mLineHeight);
+        mLinePosition = ta.getInt(R.styleable.TabsIndicator_linePosition, 1);
 
         //tabs text
         mTextColor = ta.getColorStateList(R.styleable.TabsIndicator_textColor);
@@ -89,7 +97,7 @@ public class TabsIndicator extends LinearLayout implements View.OnClickListener,
         mDividerColor = ta.getColor(R.styleable.TabsIndicator_dividerColor, mDividerColor);
         mDividerWidth = ta.getDimensionPixelOffset(R.styleable.TabsIndicator_dividerWidth, mDividerWidth);
         mDividerVerticalMargin = ta.getDimensionPixelOffset(R.styleable.TabsIndicator_dividerVerticalMargin, mDividerVerticalMargin);
-        mDividerPosition = ta.getInt(R.styleable.TabsIndicator_dividerPosition, 1);
+
         ta.recycle();
     }
 
@@ -114,27 +122,37 @@ public class TabsIndicator extends LinearLayout implements View.OnClickListener,
         if (getBackground() == null) {
             setBackgroundColor(getResources().getColor(android.R.color.holo_blue_dark));
         }
+
         for (int index = 0; index < mTabCount; index++) {
             TextView tvTab = new TextView(mContext);
             tvTab.setId(BASE_ID + index);
             tvTab.setOnClickListener(this);
 
-            if (mTextColor != null) {
-                tvTab.setTextColor(mTextColor);
-            }
             tvTab.setGravity(Gravity.CENTER);
-            tvTab.setTextSize(TypedValue.COMPLEX_UNIT_PX, mTextSizeNormal);
-            tvTab.setText(mViewPager.getAdapter().getPageTitle(index));
 
+            if (null != mViewPager.getAdapter().getPageTitle(index)) {
+                if (null != mTextColor) {
+                    tvTab.setTextColor(mTextColor);
+                }
+                tvTab.setText(mViewPager.getAdapter().getPageTitle(index));
+            }
+
+            if (mTabIcons != null && mTabIcons.size() > index) {
+                StateListDrawable drawable = mTabIcons.get(index);
+                drawable.setBounds(0, 0, drawable.getMinimumWidth(), drawable.getMinimumHeight());
+                tvTab.setCompoundDrawables(null, drawable, null, null);
+                tvTab.setCompoundDrawablePadding(0);
+                tvTab.setPadding(0, 10, 0, 0);
+            }
 
             LayoutParams tabLp = new LayoutParams(0, LayoutParams.MATCH_PARENT, 1);
             tabLp.gravity = Gravity.CENTER;
             tvTab.setLayoutParams(tabLp);
-            // 防止currentTab为0时，第一个tab文字颜色没变化
+            this.addView(tvTab);
+
             if (index == 0) {
                 resetTab(tvTab, true);
             }
-            this.addView(tvTab);
 
             if (index != mTabCount - 1 && mHasDivider) {
                 LayoutParams dividerLp = new LayoutParams(mDividerWidth, LayoutParams.MATCH_PARENT);
@@ -191,7 +209,7 @@ public class TabsIndicator extends LinearLayout implements View.OnClickListener,
         float rightX = leftX + mTabWidth - 2 * mLineMarginTab;
         float topY = 0;
         float bottomY = 0;
-        switch (mDividerPosition) {
+        switch (mLinePosition) {
             case 0:
                 topY = 0;
                 bottomY = mLineHeight;
@@ -250,5 +268,21 @@ public class TabsIndicator extends LinearLayout implements View.OnClickListener,
     public void setAnimationWithTabChange(boolean isAnimation) {
         mIsAnimation = isAnimation;
     }
+
+
+
+
+    public void addTabIcon(int idNormal, int idSelected) {
+        StateListDrawable sld = new StateListDrawable();
+        Drawable normal = idNormal == -1 ? null : mContext.getResources().getDrawable(idNormal);
+        Drawable select = idSelected == -1 ? null : mContext.getResources().getDrawable(idSelected);
+        sld.addState(new int[]{android.R.attr.state_selected}, select);
+        sld.addState(new int[]{}, normal);
+        if (mTabIcons == null) {
+            mTabIcons = new ArrayList<>();
+        }
+        mTabIcons.add(sld);
+    }
+
 
 }

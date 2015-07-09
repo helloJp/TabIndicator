@@ -11,7 +11,7 @@
         <attr name="dividerColor" format="color|reference"/>
         <attr name="dividerWidth" format="dimension|reference"/>
         <attr name="dividerVerticalMargin" format="dimension|reference"/>
-        <attr name="dividerPosition">
+        <attr name="linePosition">
             <enum name="top" value="0"/>
             <enum name="bottom" value="1"/>
         </attr>
