@@ -24,7 +24,7 @@ import java.util.List;
 /**
  * Tabs indicator
  * <p/>
- * 这里需要注意的是继承ViewGroup的自定义控件，onDraw()执行的前提是设置了背景，所以代码中设置了默认的背景
+ * 这里需要注意的是继承ViewGroup的自定义控件，onDraw()只有在设置的背景的前提下，才会执行
  * <p/>
  * Created by JiangPing on 2015/7/8.
  */
@@ -117,7 +117,6 @@ public class TabsIndicator extends LinearLayout implements View.OnClickListener,
         postInvalidate();
     }
 
-
     private void initTabs(int currentTab) {
         if (getBackground() == null) {
             setBackgroundColor(getResources().getColor(android.R.color.holo_blue_dark));
@@ -198,10 +197,9 @@ public class TabsIndicator extends LinearLayout implements View.OnClickListener,
         setCurrentTab(currentTabIndex);
     }
 
-
     @Override
-    protected void onDraw(Canvas canvas) {
-        super.onDraw(canvas);
+    protected void dispatchDraw(Canvas canvas) {
+        super.dispatchDraw(canvas);
 
         mPath.rewind();
 
