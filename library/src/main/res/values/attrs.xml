@@ -11,6 +11,10 @@
         <attr name="dividerColor" format="color|reference"/>
         <attr name="dividerWidth" format="dimension|reference"/>
         <attr name="dividerVerticalMargin" format="dimension|reference"/>
+
+        <attr name="underLineColor" format="color|reference"/>
+        <attr name="underLineHeight" format="dimension|reference"/>
+
         <attr name="linePosition">
             <enum name="top" value="0"/>
             <enum name="bottom" value="1"/>

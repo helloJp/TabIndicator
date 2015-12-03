@@ -34,8 +34,7 @@ public class MainActivity extends AppCompatActivity {
         mViewPager.setAdapter(new MyPagerAdapter(getSupportFragmentManager(), mTitles));
         mViewPager.setOffscreenPageLimit(mTitles.length);
         mTabsIndicator = (TabsIndicator) findViewById(R.id.indicator);
-        mTabsIndicator.setViewPager(0, mViewPager);
-        mTabsIndicator.setAnimationWithTabChange(true);
+        mTabsIndicator.setViewPager(0, mViewPager, true);
 
         mViewPager2 = (ViewPager) findViewById(R.id.viewpager2);
         mViewPager2.setAdapter(new MyPagerAdapter(getSupportFragmentManager(), mTitles));
@@ -45,7 +44,7 @@ public class MainActivity extends AppCompatActivity {
         mTabsIndicator2.addTabIcon(R.mipmap.tab2_n, R.mipmap.tab2_p);
         mTabsIndicator2.addTabIcon(R.mipmap.tab3_n, R.mipmap.tab3_p);
 //        mTabsIndicator2.addTabIcon(R.mipmap.tab4_n, R.mipmap.tab4_p);
-        mTabsIndicator2.setViewPager(0, mViewPager2);
+        mTabsIndicator2.setViewPager(0, mViewPager2, true);
 
         mViewPager3 = (ViewPager) findViewById(R.id.viewpager3);
         mViewPager3.setAdapter(new MyPagerAdapter2(getSupportFragmentManager(), mTitles));

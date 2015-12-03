@@ -4,13 +4,16 @@ import android.content.Context;
 import android.content.res.ColorStateList;
 import android.content.res.TypedArray;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.StateListDrawable;
 import android.support.v4.view.ViewPager;
 import android.support.v4.view.ViewPager.OnPageChangeListener;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -31,21 +34,24 @@ import java.util.List;
 public class TabsIndicator extends LinearLayout implements View.OnClickListener, OnPageChangeListener {
     private final int BASE_ID = 0xffff00;
 
-    private ColorStateList mTextColor;
-    private int mTextSizeNormal = 12;
-    private int mTextSizeSelected = 15;
+    private ColorStateList mTextColor = ColorStateList.valueOf(Color.GRAY);
+    private int mTextSizeNormal = 13;
+    private int mTextSizeSelected;
 
-    private int mLineColor = android.R.color.white;
+    private int mLineColor = Color.WHITE;
     private int mLineHeight = 5;
-    private int mLineMarginTab = 20;
+    private int mLineMarginTab;
 
     private boolean mHasDivider = true;
-    private int mDividerColor = android.R.color.black;
+    private int mDividerColor = Color.BLACK;
     private int mDividerWidth = 3;
     private int mDividerVerticalMargin = 10;
     private int mLinePosition = 1;
 
-    private boolean mIsAnimation = true;
+    private int mUnderLineColor = Color.GRAY;
+    private float mUnderLineHeight;
+
+    private boolean mIsAnimation = false;
 
     private Paint mPaintLine;
     private LayoutInflater mInflater;
@@ -90,13 +96,18 @@ public class TabsIndicator extends LinearLayout implements View.OnClickListener,
         //tabs text
         mTextColor = ta.getColorStateList(R.styleable.TabsIndicator_textColor);
         mTextSizeNormal = ta.getDimensionPixelOffset(R.styleable.TabsIndicator_textSizeNormal, mTextSizeNormal);
-        mTextSizeSelected = ta.getDimensionPixelOffset(R.styleable.TabsIndicator_textSizeSelected, mTextSizeSelected);
+        int sizeSelected = ta.getDimensionPixelOffset(R.styleable.TabsIndicator_textSizeSelected, mTextSizeSelected);
+        mTextSizeSelected = sizeSelected > 0 ? sizeSelected : mTextSizeNormal;
 
         //divider between tabs
         mHasDivider = ta.getBoolean(R.styleable.TabsIndicator_hasDivider, mHasDivider);
         mDividerColor = ta.getColor(R.styleable.TabsIndicator_dividerColor, mDividerColor);
         mDividerWidth = ta.getDimensionPixelOffset(R.styleable.TabsIndicator_dividerWidth, mDividerWidth);
         mDividerVerticalMargin = ta.getDimensionPixelOffset(R.styleable.TabsIndicator_dividerVerticalMargin, mDividerVerticalMargin);
+
+        //under Line
+        mUnderLineColor = ta.getColor(R.styleable.TabsIndicator_underLineColor, mUnderLineColor);
+        mUnderLineHeight = ta.getDimensionPixelOffset(R.styleable.TabsIndicator_underLineHeight, (int) mUnderLineHeight);
 
         ta.recycle();
     }
@@ -106,6 +117,7 @@ public class TabsIndicator extends LinearLayout implements View.OnClickListener,
         mPaintLine.setStyle(Paint.Style.FILL_AND_STROKE);
         mPaintLine.setColor(mLineColor);
     }
+
 
     public void setViewPager(int currentTab, ViewPager viewPager) {
         this.removeAllViews();
@@ -117,22 +129,22 @@ public class TabsIndicator extends LinearLayout implements View.OnClickListener,
         postInvalidate();
     }
 
+    public void setViewPager(int currentTab, ViewPager viewPager, boolean isAnimation) {
+        setViewPager(currentTab, viewPager);
+        mIsAnimation = isAnimation;
+    }
+
     private void initTabs(int currentTab) {
-        if (getBackground() == null) {
-            setBackgroundColor(getResources().getColor(android.R.color.holo_blue_dark));
-        }
 
         for (int index = 0; index < mTabCount; index++) {
             TextView tvTab = new TextView(mContext);
             tvTab.setId(BASE_ID + index);
             tvTab.setOnClickListener(this);
-
             tvTab.setGravity(Gravity.CENTER);
 
             if (null != mViewPager.getAdapter().getPageTitle(index)) {
-                if (null != mTextColor) {
-                    tvTab.setTextColor(mTextColor);
-                }
+                tvTab.setTextColor(mTextColor);
+                tvTab.setTextSize(TypedValue.COMPLEX_UNIT_PX, mTextSizeNormal);
                 tvTab.setText(mViewPager.getAdapter().getPageTitle(index));
             }
 
@@ -177,6 +189,8 @@ public class TabsIndicator extends LinearLayout implements View.OnClickListener,
             if (mViewPager.getCurrentItem() != mCurrentTabIndex) {
                 mViewPager.setCurrentItem(mCurrentTabIndex, mIsAnimation);
             }
+            debug(" ------setCurrentTab------------ " + index);
+            //TODO isAnimation == false 滑动动画
             postInvalidate();
         }
     }
@@ -200,7 +214,18 @@ public class TabsIndicator extends LinearLayout implements View.OnClickListener,
     @Override
     protected void dispatchDraw(Canvas canvas) {
         super.dispatchDraw(canvas);
+        if (mTabCount == 0) {
+            return;
+        }
 
+        //under line
+        Paint paint = new Paint();
+        paint.setColor(mUnderLineColor);
+
+        RectF rectF = new RectF(0, getHeight() - mUnderLineHeight, getWidth(), getHeight());
+        canvas.drawRect(rectF, paint);
+
+        //indicator line
         mPath.rewind();
 
         float leftX = mLineMarginTab + mLineMarginX;
@@ -239,9 +264,8 @@ public class TabsIndicator extends LinearLayout implements View.OnClickListener,
     @Override
     public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
         mLineMarginX = (int) (mTabWidth * (position + positionOffset));
-
+//        debug("mLineMarginX >>>"+mLineMarginX);
         postInvalidate();
-
         if (mOnPageChangeListener != null) {
             mOnPageChangeListener.onPageScrolled(position, positionOffset, positionOffsetPixels);
         }
@@ -250,7 +274,6 @@ public class TabsIndicator extends LinearLayout implements View.OnClickListener,
     @Override
     public void onPageSelected(int position) {
         setCurrentTab(position);
-
         if (mOnPageChangeListener != null) {
             mOnPageChangeListener.onPageSelected(position);
         }
@@ -262,13 +285,6 @@ public class TabsIndicator extends LinearLayout implements View.OnClickListener,
             mOnPageChangeListener.onPageScrollStateChanged(state);
         }
     }
-
-    public void setAnimationWithTabChange(boolean isAnimation) {
-        mIsAnimation = isAnimation;
-    }
-
-
-
 
     public void addTabIcon(int idNormal, int idSelected) {
         StateListDrawable sld = new StateListDrawable();
@@ -282,5 +298,9 @@ public class TabsIndicator extends LinearLayout implements View.OnClickListener,
         mTabIcons.add(sld);
     }
 
-
+    private void debug(String msg) {
+        if (msg != null) {
+            Log.i("debug", msg);
+        }
+    }
 }
