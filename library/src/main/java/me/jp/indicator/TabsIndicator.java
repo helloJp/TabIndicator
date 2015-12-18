@@ -1,5 +1,7 @@
 package me.jp.indicator;
 
+import android.animation.TypeEvaluator;
+import android.animation.ValueAnimator;
 import android.content.Context;
 import android.content.res.ColorStateList;
 import android.content.res.TypedArray;
@@ -16,7 +18,6 @@ import android.util.AttributeSet;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
-import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -26,9 +27,6 @@ import java.util.List;
 
 /**
  * Tabs indicator
- * <p/>
- * 这里需要注意的是继承ViewGroup的自定义控件，onDraw()只有在设置的背景的前提下，才会执行
- * <p/>
  * Created by JiangPing on 2015/7/8.
  */
 public class TabsIndicator extends LinearLayout implements View.OnClickListener, OnPageChangeListener {
@@ -38,15 +36,18 @@ public class TabsIndicator extends LinearLayout implements View.OnClickListener,
     private int mTextSizeNormal = 13;
     private int mTextSizeSelected;
 
-    private int mLineColor = Color.WHITE;
-    private int mLineHeight = 5;
-    private int mLineMarginTab;
+    private int mTabPaddingTop = 0;
+    private int mTabPaddingBottom = 0;
+
+    private int mIndicatorColor = Color.WHITE;
+    private int mIndicatorHeight = 5;
+    private int mIndicatorMarginTab;
 
     private boolean mHasDivider = true;
     private int mDividerColor = Color.BLACK;
     private int mDividerWidth = 3;
     private int mDividerVerticalMargin = 10;
-    private int mLinePosition = 1;
+    private int mIndicatorPos = 1;//0 top ,1 bottom
 
     private int mUnderLineColor = Color.GRAY;
     private float mUnderLineHeight;
@@ -54,7 +55,6 @@ public class TabsIndicator extends LinearLayout implements View.OnClickListener,
     private boolean mIsAnimation = false;
 
     private Paint mPaintLine;
-    private LayoutInflater mInflater;
 
     private ViewPager mViewPager;
 
@@ -67,8 +67,10 @@ public class TabsIndicator extends LinearLayout implements View.OnClickListener,
     private int mTabWidth;
     private Context mContext;
 
-    private OnPageChangeListener mOnPageChangeListener;
+    private float mIndicatorTopY;
+    private float mIndicatorBottomY;
 
+    private OnPageChangeListener mOnPageChangeListener;
     private List<StateListDrawable> mTabIcons;
 
     public TabsIndicator(Context context) {
@@ -78,20 +80,21 @@ public class TabsIndicator extends LinearLayout implements View.OnClickListener,
     public TabsIndicator(Context context, AttributeSet attrs) {
         super(context, attrs);
         mContext = context;
-        mInflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         handlerAttrs(context, attrs);
         initPaint();
     }
 
-
     private void handlerAttrs(Context context, AttributeSet attrs) {
         TypedArray ta = context.obtainStyledAttributes(attrs, R.styleable.TabsIndicator);
 
+        mTabPaddingTop = ta.getDimensionPixelOffset(R.styleable.TabsIndicator_tabPaddingTop, 0);
+        mTabPaddingBottom = ta.getDimensionPixelOffset(R.styleable.TabsIndicator_tabPaddingTop, 0);
+
         //indicator line
-        mLineColor = ta.getColor(R.styleable.TabsIndicator_lineColor, mLineColor);
-        mLineMarginTab = ta.getDimensionPixelOffset(R.styleable.TabsIndicator_lineMarginTab, mLineMarginTab);
-        mLineHeight = ta.getDimensionPixelOffset(R.styleable.TabsIndicator_lineHeight, mLineHeight);
-        mLinePosition = ta.getInt(R.styleable.TabsIndicator_linePosition, 1);
+        mIndicatorColor = ta.getColor(R.styleable.TabsIndicator_indicatorColor, mIndicatorColor);
+        mIndicatorMarginTab = ta.getDimensionPixelOffset(R.styleable.TabsIndicator_indicatorMarginTab, mIndicatorMarginTab);
+        mIndicatorHeight = ta.getDimensionPixelOffset(R.styleable.TabsIndicator_indicatorHeight, mIndicatorHeight);
+        mIndicatorPos = ta.getInt(R.styleable.TabsIndicator_indicatorPosition, 1);
 
         //tabs text
         mTextColor = ta.getColorStateList(R.styleable.TabsIndicator_textColor);
@@ -112,12 +115,24 @@ public class TabsIndicator extends LinearLayout implements View.OnClickListener,
         ta.recycle();
     }
 
+    private void calculateIndicatorPos() {
+        switch (mIndicatorPos) {
+            case 0:
+                mIndicatorTopY = 0;
+                mIndicatorBottomY = mIndicatorHeight;
+                break;
+            case 1:
+                mIndicatorTopY = getHeight() - mIndicatorHeight;
+                mIndicatorBottomY = getHeight();
+                break;
+        }
+    }
+
     private void initPaint() {
         mPaintLine = new Paint();
         mPaintLine.setStyle(Paint.Style.FILL_AND_STROKE);
-        mPaintLine.setColor(mLineColor);
+        mPaintLine.setColor(mIndicatorColor);
     }
-
 
     public void setViewPager(int currentTab, ViewPager viewPager) {
         this.removeAllViews();
@@ -159,6 +174,7 @@ public class TabsIndicator extends LinearLayout implements View.OnClickListener,
             LayoutParams tabLp = new LayoutParams(0, LayoutParams.MATCH_PARENT, 1);
             tabLp.gravity = Gravity.CENTER;
             tvTab.setLayoutParams(tabLp);
+            tvTab.setPadding(0, mTabPaddingTop, 0, mTabPaddingBottom);
             this.addView(tvTab);
 
             if (index == 0) {
@@ -189,10 +205,27 @@ public class TabsIndicator extends LinearLayout implements View.OnClickListener,
             if (mViewPager.getCurrentItem() != mCurrentTabIndex) {
                 mViewPager.setCurrentItem(mCurrentTabIndex, mIsAnimation);
             }
-            debug(" ------setCurrentTab------------ " + index);
-            //TODO isAnimation == false 滑动动画
-            postInvalidate();
         }
+    }
+
+    private void moveIndicatorByAnimation(int currPos, int lastPos) {
+        int x1 = mIndicatorMarginTab + lastPos * mTabWidth;
+        Point startPoint = new Point(x1, mIndicatorTopY);
+
+        int lineMarginX_end = x1 + (currPos - lastPos) * mTabWidth;
+        Point endPoint = new Point(lineMarginX_end, mIndicatorTopY);
+
+        ValueAnimator animator = ValueAnimator.ofObject(new PointEvaluator(), startPoint, endPoint);
+        animator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+            @Override
+            public void onAnimationUpdate(ValueAnimator valueAnimator) {
+                Point point = (Point) valueAnimator.getAnimatedValue();
+                mLineMarginX = (int) point.x;
+                postInvalidate();
+            }
+        });
+        animator.setDuration(200);
+        animator.start();
     }
 
     private void resetTab(TextView tvTab, boolean isSelected) {
@@ -201,14 +234,28 @@ public class TabsIndicator extends LinearLayout implements View.OnClickListener,
         tvTab.setPressed(isSelected);
     }
 
-    public void setOnPageChangeListener(OnPageChangeListener onPageChangeListener) {
-        mOnPageChangeListener = onPageChangeListener;
-    }
-
     @Override
     public void onClick(View v) {
         int currentTabIndex = v.getId() - BASE_ID;
+        if (!mIsAnimation) {
+            moveIndicatorByAnimation(currentTabIndex, mCurrentTabIndex);
+        }
         setCurrentTab(currentTabIndex);
+    }
+
+    @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+        calculateIndicatorPos();
+    }
+
+    @Override
+    protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+        super.onSizeChanged(w, h, oldw, oldh);
+        mTabWidth = getWidth();
+        if (mTabCount != 0) {
+            mTabWidth = getWidth() / mTabCount;
+        }
     }
 
     @Override
@@ -228,43 +275,21 @@ public class TabsIndicator extends LinearLayout implements View.OnClickListener,
         //indicator line
         mPath.rewind();
 
-        float leftX = mLineMarginTab + mLineMarginX;
-        float rightX = leftX + mTabWidth - 2 * mLineMarginTab;
-        float topY = 0;
-        float bottomY = 0;
-        switch (mLinePosition) {
-            case 0:
-                topY = 0;
-                bottomY = mLineHeight;
-                break;
-            case 1:
-                topY = getHeight() - mLineHeight;
-                bottomY = getHeight();
-                break;
-        }
+        float leftX = mIndicatorMarginTab + mLineMarginX;
+        float rightX = leftX + mTabWidth - 2 * mIndicatorMarginTab;
 
-        mPath.moveTo(leftX, topY);
-        mPath.lineTo(rightX, topY);
-        mPath.lineTo(rightX, bottomY);
-        mPath.lineTo(leftX, bottomY);
+        mPath.moveTo(leftX, mIndicatorTopY);
+        mPath.lineTo(rightX, mIndicatorTopY);
+        mPath.lineTo(rightX, mIndicatorBottomY);
+        mPath.lineTo(leftX, mIndicatorBottomY);
         mPath.close();
 
         canvas.drawPath(mPath, mPaintLine);
     }
 
     @Override
-    protected void onSizeChanged(int w, int h, int oldw, int oldh) {
-        super.onSizeChanged(w, h, oldw, oldh);
-        mTabWidth = getWidth();
-        if (mTabCount != 0) {
-            mTabWidth = getWidth() / mTabCount;
-        }
-    }
-
-    @Override
     public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
         mLineMarginX = (int) (mTabWidth * (position + positionOffset));
-//        debug("mLineMarginX >>>"+mLineMarginX);
         postInvalidate();
         if (mOnPageChangeListener != null) {
             mOnPageChangeListener.onPageScrolled(position, positionOffset, positionOffsetPixels);
@@ -286,6 +311,35 @@ public class TabsIndicator extends LinearLayout implements View.OnClickListener,
         }
     }
 
+    private class PointEvaluator implements TypeEvaluator {
+        @Override
+        public Object evaluate(float fraction, Object startValue, Object endValue) {
+            Point startPoint = (Point) startValue;
+            Point endPoint = (Point) endValue;
+            float x = startPoint.getX() + fraction * (endPoint.getX() - startPoint.getX());
+            float y = startPoint.getY() + fraction * (endPoint.getY() - startPoint.getY());
+            return new Point(x, y);
+        }
+    }
+
+    private class Point {
+        private float x;
+        private float y;
+
+        public Point(float x, float y) {
+            this.x = x;
+            this.y = y;
+        }
+
+        public float getX() {
+            return x;
+        }
+
+        public float getY() {
+            return y;
+        }
+    }
+
     public void addTabIcon(int idNormal, int idSelected) {
         StateListDrawable sld = new StateListDrawable();
         Drawable normal = idNormal == -1 ? null : mContext.getResources().getDrawable(idNormal);
@@ -296,6 +350,10 @@ public class TabsIndicator extends LinearLayout implements View.OnClickListener,
             mTabIcons = new ArrayList<>();
         }
         mTabIcons.add(sld);
+    }
+
+    public void setOnPageChangeListener(OnPageChangeListener onPageChangeListener) {
+        mOnPageChangeListener = onPageChangeListener;
     }
 
     private void debug(String msg) {

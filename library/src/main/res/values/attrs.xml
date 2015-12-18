@@ -1,12 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <declare-styleable name="TabsIndicator">
+
+        <attr name="tabPaddingTop" format="dimension|reference"/>
+        <attr name="tabPaddingBottom" format="dimension|reference"/>
+
         <attr name="textColor" format="color|reference"/>
         <attr name="textSizeNormal" format="dimension|reference"/>
         <attr name="textSizeSelected" format="dimension|reference"/>
-        <attr name="lineMarginTab" format="dimension|reference"/>
-        <attr name="lineColor" format="color|reference"/>
-        <attr name="lineHeight" format="dimension|reference"/>
+        <attr name="indicatorMarginTab" format="dimension|reference"/>
+        <attr name="indicatorColor" format="color|reference"/>
+        <attr name="indicatorHeight" format="dimension|reference"/>
+        <attr name="indicatorPosition">
+            <enum name="top" value="0"/>
+            <enum name="bottom" value="1"/>
+        </attr>
         <attr name="hasDivider" format="boolean"/>
         <attr name="dividerColor" format="color|reference"/>
         <attr name="dividerWidth" format="dimension|reference"/>
@@ -15,9 +23,6 @@
         <attr name="underLineColor" format="color|reference"/>
         <attr name="underLineHeight" format="dimension|reference"/>
 
-        <attr name="linePosition">
-            <enum name="top" value="0"/>
-            <enum name="bottom" value="1"/>
-        </attr>
+
     </declare-styleable>
 </resources>
