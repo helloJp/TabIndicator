@@ -62,3 +62,7 @@
 | dividerColor  	   | 分割线颜色 |
 | dividerWidth         | 分割线宽度 |
 | dividerVerticalMargin 	 | 分割线距离tab选项卡上下距离 |
+
+#### 
+2015.12.18 添加直接点击tab，indicator的滑动。
+
