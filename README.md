@@ -1,6 +1,6 @@
 ﻿#TabIndicator
 ##Ⅰ、效果图
-![](http://g.recordit.co/2T9oxJj8Ym.gif)
+![](https://raw.githubusercontent.com/helloJp/TabIndicator/master/art/screenshot_indicator01.gif)
 </br>
 ##Ⅱ、使用方法
 ###1、布局文件中添加 **TabsIndicator**
